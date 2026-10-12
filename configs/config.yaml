@@ -1,0 +1,66 @@
+# ==============================================================================
+# GridSight Configuration File (v2 Advanced Edition)
+# ==============================================================================
+
+app:
+  name: "GridSight"
+  version: "2.0.0-dev"
+  environment: "development"
+  log_level: "INFO"
+
+paths:
+  raw_data_dir: "archive (1)"
+  processed_data_dir: "data/processed"
+  features_dir: "data/features"
+  models_dir: "backend/models"
+  artifacts_dir: "backend/artifacts"
+  docs_figures_dir: "docs/figures"
+  workspace_dir: "workspace"
+
+reproducibility:
+  seed: 42
+  deterministic: true
+
+dataset:
+  target_column: "total load actual"
+  forecast_benchmark_column: "total load forecast"
+  timestamp_column: "timestamp"
+  frequency_minutes: 60
+  history_min_days: 30
+  history_recommended_days: 365
+  units: "MW"
+  splits:
+    train_ratio: 0.70
+    val_ratio: 0.15
+    test_ratio: 0.15
+
+feature_engineering:
+  lookback_window_hours: 24
+  lags_hours: [1, 2, 24, 168]
+  rolling_windows_hours: [6, 24]
+  weather_cities:
+    - "madrid"
+    - "barcelona"
+    - "valencia"
+    - "seville"
+    - "bilbao"
+
+training:
+  default_epochs: 10
+  default_batch_size: 128
+  default_learning_rate: 0.001
+  early_stopping_patience: 3
+  time_budget_seconds:
+    quick: 60
+    standard: 300
+    finetune: 600
+
+baselines:
+  persistence_lag: 1
+  seasonal_naive_daily_lag: 24
+  seasonal_naive_weekly_lag: 168
+
+benchmarks:
+  persistence_target_mape: 3.78
+  operator_target_mape: 1.10
+  deep_learning_target_mape: 3.50
