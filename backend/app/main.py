@@ -1,8 +1,10 @@
 import os
+import re
 import time
-import shutil
+import uuid
 from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Query, HTTPException
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import (
     PredictionRequest, PredictionResponse,
@@ -17,6 +19,18 @@ app = FastAPI(
     description="Production-grade FastAPI service serving Deep Learning models (LSTM, GRU, Bi-LSTM, CNN-LSTM) for electricity load forecasting in renewable-integrated power systems.",
     version="1.0.0"
 )
+
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
+
+class ReportConfigurationRequest(BaseModel):
+    datetime_column: Optional[str] = ""
+    target_column: Optional[str] = ""
+
+
+def validate_report_id(report_id: str) -> None:
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", report_id):
+        raise HTTPException(status_code=400, detail="Invalid report ID.")
 
 # Enable CORS for Next.js frontend
 app.add_middleware(
@@ -36,7 +50,7 @@ def get_system_health():
     best_model_exists = os.path.exists(os.path.join(os.path.dirname(__file__), "..", "models", "best_model.keras"))
     models_dir = os.path.join(os.path.dirname(__file__), "..", "models")
     avail_models = [f for f in os.listdir(models_dir) if f.endswith('.keras')] if os.path.exists(models_dir) else []
-    
+
     return SystemHealthResponse(
         status="operational",
         api_version="1.0.0",
@@ -144,27 +158,174 @@ def train_model(req: TrainRequest):
         message=f"{req.model_type} fine-tuned successfully with {req.epochs} epochs (batch size: {req.batch_size}, lr: {req.learning_rate})."
     )
 
-@app.post("/api/upload", tags=["Dataset"])
-async def upload_dataset(file: UploadFile = File(...)):
+@app.post("/api/upload-analyze", tags=["Upload & Analyze"])
+async def upload_and_analyze(file: UploadFile = File(...)):
     """
-    Upload incremental energy or weather dataset CSV.
+    Upload a CSV dataset and automatically generate a comprehensive EDA report.
+    Returns the full report with statistics, distributions, correlations,
+    time-series analytics, outlier analysis, and more.
     """
-    if not file.filename.endswith('.csv'):
+    from .upload_service import process_uploaded_dataset
+
+    if not file.filename or not file.filename.lower().endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported.")
         
     upload_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "uploads")
     os.makedirs(upload_dir, exist_ok=True)
-    destination = os.path.join(upload_dir, file.filename)
+    destination = os.path.join(upload_dir, f"{uuid.uuid4().hex}.csv")
+    bytes_written = 0
+    try:
+        with open(destination, "wb") as buffer:
+            while chunk := await file.read(1024 * 1024):
+                bytes_written += len(chunk)
+                if bytes_written > MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="CSV uploads are limited to 50 MB.")
+                buffer.write(chunk)
+    except Exception:
+        if os.path.exists(destination):
+            os.remove(destination)
+        raise
+    if bytes_written == 0:
+        os.remove(destination)
+        raise HTTPException(status_code=400, detail="The uploaded CSV is empty.")
     
-    with open(destination, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
-    return {
-        "status": "success",
-        "filename": file.filename,
-        "size_bytes": os.path.getsize(destination),
-        "message": "Dataset uploaded and registered successfully."
-    }
+    try:
+        report = process_uploaded_dataset(destination, file.filename)
+        if "error" in report and not report.get("dataset_overview"):
+            raise HTTPException(status_code=422, detail=report["error"])
+        return report
+    except HTTPException:
+        if os.path.exists(destination):
+            os.remove(destination)
+        raise
+    except Exception as e:
+        if os.path.exists(destination):
+            os.remove(destination)
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@app.get("/api/reports", tags=["Upload & Analyze"])
+def list_all_reports():
+    """List all previously generated dataset analysis reports."""
+    from .upload_service import list_reports
+    return {"reports": list_reports()}
+
+
+@app.get("/api/reports/{report_id}", tags=["Upload & Analyze"])
+def get_report_by_id(report_id: str):
+    """Retrieve a specific report by its ID."""
+    from .upload_service import get_report
+    validate_report_id(report_id)
+    report = get_report(report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail=f"Report '{report_id}' not found.")
+    return report
+
+
+@app.post("/api/reports/{report_id}/reconfigure", tags=["Upload & Analyze"])
+def reconfigure_report(report_id: str, config: ReportConfigurationRequest):
+    """Re-run the profile using user-selected timestamp and target columns."""
+    from .upload_service import UPLOAD_DIR, get_report, process_uploaded_dataset
+    validate_report_id(report_id)
+
+    report = get_report(report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail=f"Report '{report_id}' not found.")
+    source_file = os.path.basename(report.get("source_file", ""))
+    source_path = os.path.join(UPLOAD_DIR, source_file)
+    if not source_file or not os.path.isfile(source_path):
+        raise HTTPException(status_code=410, detail="The original upload is no longer available. Upload the CSV again to reconfigure it.")
+    refreshed = process_uploaded_dataset(
+        source_path,
+        report.get("filename", "dataset.csv"),
+        datetime_col_override=config.datetime_column or "",
+        target_col_override=config.target_column or "",
+        report_id_override=report_id,
+    )
+    if "error" in refreshed:
+        raise HTTPException(status_code=422, detail=refreshed["error"])
+    return refreshed
+
+
+@app.delete("/api/reports/{report_id}", tags=["Upload & Analyze"])
+def delete_report_by_id(report_id: str):
+    """Delete a specific report by its ID."""
+    from .upload_service import delete_report
+    validate_report_id(report_id)
+    if delete_report(report_id):
+        return {"status": "deleted", "report_id": report_id}
+    raise HTTPException(status_code=404, detail=f"Report '{report_id}' not found.")
+
+
+# ==========================================
+# Enterprise Endpoints
+# ==========================================
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
+
+class CopilotChatRequest(BaseModel):
+    message: str
+    context: Optional[Dict[str, Any]] = None
+
+class SimulationRunRequest(BaseModel):
+    temperature: Optional[float] = 18.0
+    humidity: Optional[float] = 55.0
+    solar_mult: Optional[float] = 100.0
+    wind_mult: Optional[float] = 100.0
+    industrial: Optional[float] = 100.0
+    ev_penetration: Optional[float] = 5.0
+    battery_storage: Optional[float] = 0.0
+    grid_frequency: Optional[float] = 50.0
+    holiday: Optional[bool] = False
+
+@app.post("/api/copilot/chat", tags=["Enterprise AI"])
+def copilot_chat(req: CopilotChatRequest):
+    """Enterprise AI Copilot responding with real telemetry context."""
+    from .enterprise_service import enterprise_service
+    return enterprise_service.copilot_query(req.message, req.context)
+
+@app.get("/api/xai/metrics", tags=["Enterprise AI"])
+def get_xai_metrics():
+    """SHAP, temporal attention, and feature attribution waterfall."""
+    from .enterprise_service import enterprise_service
+    return enterprise_service.get_xai_metrics()
+
+@app.post("/api/simulation/run", tags=["Enterprise AI"])
+def run_simulation(req: SimulationRunRequest):
+    """Real-time physical and neural grid what-if simulation."""
+    from .enterprise_service import enterprise_service
+    return enterprise_service.run_simulation(req.dict())
+
+@app.get("/api/digital-twin/state", tags=["Enterprise AI"])
+def get_digital_twin_state():
+    """Live topology, substation loadings, and transmission line flows for Spain."""
+    from .enterprise_service import enterprise_service
+    return enterprise_service.get_digital_twin_state()
+
+@app.get("/api/risk/assessment", tags=["Enterprise AI"])
+def get_risk_assessment():
+    """Predictive electrical grid risk factors and mitigation actions."""
+    from .enterprise_service import enterprise_service
+    return enterprise_service.get_risk_assessment()
+
+@app.get("/api/drift/report", tags=["Enterprise AI"])
+def get_drift_report():
+    """Audits feature drift, covariate shift, and population stability index."""
+    from .enterprise_service import enterprise_service
+    return enterprise_service.get_data_drift_report()
+
+@app.get("/api/automl/leaderboard", tags=["Enterprise AI"])
+def get_automl_leaderboard():
+    """Catalog of 18 deep learning, transformer, and time-series architectures."""
+    from .enterprise_service import enterprise_service
+    return enterprise_service.get_automl_leaderboard()
+
+@app.get("/api/decisions/summary", tags=["Enterprise AI"])
+def get_decision_intelligence():
+    """Executive boardroom KPIs, daily top 10 insights, and smart recommendations."""
+    from .enterprise_service import enterprise_service
+    return enterprise_service.get_decision_intelligence()
+
 
 if __name__ == "__main__":
     import uvicorn

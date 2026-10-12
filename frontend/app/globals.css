@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #070B14;
-  --bg-secondary: #111827;
-  --bg-card: #161E2E;
-  --color-primary: #3B82F6;
-  --color-accent: #22D3EE;
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(59, 130, 246, 0.3);
+  color-scheme: dark;
+  --bg-primary: #070a12;
+  --bg-secondary: #0c1320;
+  --bg-card: #101a2a;
+  --color-primary: #5487ff;
+  --color-accent: #54d8e8;
+  --color-success: #4ed7a0;
+  --color-warning: #f6bd60;
+  --color-danger: #fb7185;
+  --text-main: #f3f6fc;
+  --text-muted: #8c9bb2;
+  --border-color: rgba(185, 207, 245, 0.09);
+  --border-hover: rgba(84, 216, 232, 0.32);
+  --ease-premium: cubic-bezier(.2,.75,.25,1);
 }
 
 body {
-  background-color: var(--bg-primary);
+  position: relative;
+  background: radial-gradient(ellipse at 78% -12%, rgba(34, 80, 143, .13), transparent 42%), var(--bg-primary);
   color: var(--text-main);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
 }
+
+body::before {
+  position: fixed;
+  z-index: 0;
+  inset: -18vh -15vw auto auto;
+  width: min(70vw, 900px);
+  height: min(65vw, 740px);
+  content: "";
+  pointer-events: none;
+  opacity: .4;
+  background: radial-gradient(ellipse, rgba(17, 112, 157, .13), rgba(52, 65, 160, .07) 38%, transparent 70%);
+  filter: blur(34px);
+  animation: aurora-drift 24s ease-in-out infinite alternate;
+}
+
+.app-frame { position: relative; z-index: 1; }
+.app-main > * { animation: page-arrive .45s var(--ease-premium) both; }
+.app-main > * > :nth-child(1) { animation: section-arrive .55s .04s var(--ease-premium) both; }
+.app-main > * > :nth-child(2) { animation: section-arrive .55s .1s var(--ease-premium) both; }
+.app-main > * > :nth-child(3) { animation: section-arrive .55s .16s var(--ease-premium) both; }
+.app-main > * > :nth-child(4) { animation: section-arrive .55s .22s var(--ease-premium) both; }
+.app-main > * > :nth-child(5) { animation: section-arrive .55s .28s var(--ease-premium) both; }
+.app-main > * > :nth-child(6) { animation: section-arrive .55s .34s var(--ease-premium) both; }
+
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button { transition-timing-function: var(--ease-premium); }
+button:not(:disabled) { transition-property: color, background-color, border-color, box-shadow, transform, opacity; transition-duration: .22s; }
+button:not(:disabled):active { transform: scale(.97); }
+a { transition-timing-function: var(--ease-premium); }
+a:active { transform: scale(.985); }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid rgba(84, 216, 232, .75);
+  outline-offset: 2px;
+}
+::selection { background: rgba(84, 216, 232, .28); color: #fff; }
+
+@keyframes page-arrive {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes section-arrive {
+  from { opacity: 0; transform: translateY(14px) scale(.99); filter: blur(3px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes card-glow {
+  0%, 100% { opacity: 0; }
+  50% { opacity: .7; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes soft-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(84, 216, 232, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(84, 216, 232, .07); }
+}
+@keyframes aurora-drift {
+  from { transform: translate3d(-3%, -1%, 0) scale(.96); }
+  to { transform: translate3d(2%, 4%, 0) scale(1.06); }
+}
+@keyframes flow-dash { to { stroke-dashoffset: -32; } }
+@keyframes node-breathe { 0%, 100% { transform: scale(.88); opacity: .55; } 50% { transform: scale(1.42); opacity: .12; } }
+@keyframes shimmer { to { background-position: 220% 0; } }
 
 /* Glassmorphism card styles */
 .glass-panel {
@@ -41,6 +107,32 @@ body {
   transform: translateY(-2px);
 }
 
+.premium-card {
+  background: linear-gradient(145deg, rgba(19, 30, 48, .9), rgba(11, 18, 31, .88));
+  border: 1px solid rgba(185, 207, 245, .09);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .16), inset 0 1px rgba(255, 255, 255, .025);
+  backdrop-filter: blur(18px);
+}
+.premium-card-hover { transition: transform .28s var(--ease-premium), border-color .28s var(--ease-premium), box-shadow .28s var(--ease-premium); }
+.premium-card-hover:hover { transform: translateY(-2px); border-color: rgba(84, 216, 232, .2); box-shadow: 0 22px 55px rgba(0, 0, 0, .24), 0 0 25px rgba(34, 211, 238, .045); }
+.app-main div[class*="rounded-2xl"][class*="border"] { transition: border-color .28s var(--ease-premium), box-shadow .28s var(--ease-premium), background-color .28s var(--ease-premium), transform .28s var(--ease-premium); }
+.app-main div[class*="rounded-2xl"][class*="border"]:hover { border-color: rgba(84, 216, 232, .17); }
+.app-main div[class*="rounded-2xl"][class*="border"]:has(> .recharts-responsive-container):hover,
+.app-main div[class*="rounded-2xl"][class*="border"]:has(> div > .recharts-responsive-container):hover { transform: translateY(-2px); box-shadow: 0 18px 45px rgba(0, 0, 0, .22), 0 0 28px rgba(34, 211, 238, .045); }
+.app-main .recharts-wrapper { transition: filter .35s var(--ease-premium); }
+.app-main .recharts-wrapper:hover { filter: drop-shadow(0 0 10px rgba(34, 211, 238, .12)); }
+.motion-popover { transform-origin: top right; animation: pop-in .22s var(--ease-premium) both; }
+.motion-backdrop { animation: fade-in .2s ease-out both; }
+.motion-live { animation: soft-pulse 2.4s ease-in-out infinite; }
+header div.absolute[class*="top-12"] { transform-origin: top right; animation: pop-in .22s var(--ease-premium) both; }
+button[aria-label="Close navigation"] { animation: fade-in .2s ease-out both; }
+aside nav a span:first-child { transition: transform .25s var(--ease-premium), color .25s var(--ease-premium), background-color .25s var(--ease-premium); }
+aside nav a:hover span:first-child { transform: translateX(2px) scale(1.06); }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.flow-dash { animation: flow-dash 3.5s linear infinite; }
+.node-breathe { animation: node-breathe 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.shimmer-line { background: linear-gradient(90deg, rgba(34,211,238,.05), rgba(34,211,238,.75), rgba(34,211,238,.05)); background-size: 220% 100%; animation: shimmer 3s linear infinite; }
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -57,7 +149,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #46536a;
 }
 
 /* Glow effects */
@@ -71,4 +163,12 @@ body {
 
 .glow-green {
   box-shadow: 0 0 25px rgba(34, 197, 94, 0.35);
+}
+
+@media (max-width: 640px) {
+  .app-main > * { animation-duration: .3s; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
