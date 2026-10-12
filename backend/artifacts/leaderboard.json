@@ -1,0 +1,55 @@
+{
+  "best_model": "Bi-LSTM",
+  "leaderboard": [
+    {
+      "model_name": "Bi-LSTM",
+      "mae": 802.87,
+      "rmse": 1109.34,
+      "mape": 2.78,
+      "r2": 0.9414,
+      "train_time_sec": 0.16,
+      "model_file": "bilstm_model.keras",
+      "is_best": true
+    },
+    {
+      "model_name": "GRU",
+      "mae": 824.91,
+      "rmse": 1116.8,
+      "mape": 2.86,
+      "r2": 0.9406,
+      "train_time_sec": 0.11,
+      "model_file": "gru_model.keras",
+      "is_best": false
+    },
+    {
+      "model_name": "LSTM",
+      "mae": 864.99,
+      "rmse": 1173.31,
+      "mape": 2.98,
+      "r2": 0.9344,
+      "train_time_sec": 0.23,
+      "model_file": "lstm_model.keras",
+      "is_best": false
+    },
+    {
+      "model_name": "CNN-LSTM",
+      "mae": 889.85,
+      "rmse": 1162.64,
+      "mape": 3.08,
+      "r2": 0.9356,
+      "train_time_sec": 0.13,
+      "model_file": "cnn_lstm_model.keras",
+      "is_best": false
+    },
+    {
+      "model_name": "Persistence Baseline",
+      "mae": 8409.51,
+      "rmse": 9719.04,
+      "mape": 29.94,
+      "r2": -3.4978,
+      "train_time_sec": 0.04,
+      "model_file": "baseline",
+      "is_best": false
+    }
+  ]
+}

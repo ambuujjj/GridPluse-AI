@@ -1,0 +1,77 @@
+{
+  "total_features": 23,
+  "feature_names": [
+    "hour_sin",
+    "hour_cos",
+    "month_sin",
+    "month_cos",
+    "weekday",
+    "is_weekend",
+    "load_lag_1",
+    "load_lag_2",
+    "load_lag_24",
+    "load_lag_168",
+    "load_roll_mean_6h",
+    "load_roll_std_6h",
+    "load_roll_mean_24h",
+    "load_roll_std_24h",
+    "temp_spain_avg",
+    "humidity_spain_avg",
+    "wind_speed_spain_avg",
+    "clouds_all_spain_avg",
+    "temp_madrid",
+    "temp_barcelona",
+    "temp_valencia",
+    "temp_seville",
+    "temp_bilbao"
+  ],
+  "calendar_features": [
+    "hour_sin",
+    "hour_cos",
+    "month_sin",
+    "month_cos",
+    "weekday",
+    "is_weekend"
+  ],
+  "lag_features": [
+    "load_lag_1",
+    "load_lag_2",
+    "load_lag_24",
+    "load_lag_168"
+  ],
+  "rolling_features": [
+    "load_roll_mean_6h",
+    "load_roll_std_6h",
+    "load_roll_mean_24h",
+    "load_roll_std_24h"
+  ],
+  "weather_features": [
+    "temp_spain_avg",
+    "humidity_spain_avg",
+    "wind_speed_spain_avg",
+    "clouds_all_spain_avg",
+    "temp_madrid",
+    "temp_barcelona",
+    "temp_valencia",
+    "temp_seville",
+    "temp_bilbao"
+  ],
+  "lookback": 24,
+  "splits": {
+    "train": {
+      "samples": 24403,
+      "start": "2015-01-08 23:00:00+00:00",
+      "end": "2017-10-21 17:00:00+00:00"
+    },
+    "val": {
+      "samples": 5210,
+      "start": "2017-10-22 18:00:00+00:00",
+      "end": "2018-05-27 19:00:00+00:00"
+    },
+    "test": {
+      "samples": 5211,
+      "start": "2018-05-28 20:00:00+00:00",
+      "end": "2018-12-31 22:00:00+00:00"
+    }
+  }
+}

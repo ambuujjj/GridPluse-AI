@@ -1,0 +1,46 @@
+{
+  "total_hours": 35064,
+  "start_date": "2014-12-31 23:00:00+00:00",
+  "end_date": "2018-12-31 22:00:00+00:00",
+  "mean_load": 28698.281385466576,
+  "std_load": 4575.828853961431,
+  "min_load": 18041.0,
+  "max_load": 41015.0,
+  "insights": [
+    {
+      "chart": "Electricity Load Over Time",
+      "file": "docs\\figures\\01_load_over_time.png",
+      "insight": "Consistent seasonal oscillation across all 4 years with prominent dual peaks: a primary winter peak (January-February) driven by space heating, and a secondary summer peak (July-August) driven by air conditioning."
+    },
+    {
+      "chart": "Daily Load Pattern",
+      "file": "docs\\figures\\02_daily_load_pattern.png",
+      "insight": "Strong diurnal cycle: lowest demand occurs at 04:00-05:00 UTC (~22,000 MW), sharp morning ramp between 06:00-10:00 UTC, and evening peak at 20:00-21:00 UTC (~34,000 MW). Weekend load is structurally 15-20% lower due to industrial shutdown."
+    },
+    {
+      "chart": "Monthly Trend",
+      "file": "docs\\figures\\03_monthly_trend.png",
+      "insight": "January and February exhibit the highest mean load (~31,500 MW) and highest peak variance, followed by a secondary peak in July (~29,800 MW). Spring (April-May) and Autumn (October) are mild transition periods with lowest overall grid demand."
+    },
+    {
+      "chart": "Correlation Heatmap",
+      "file": "docs\\figures\\04_correlation_heatmap.png",
+      "insight": "Load Actual correlates very strongly with TSO Day-Ahead Forecast (r=0.99) and market price (r=0.44). Renewable generation exhibits distinct complementary dynamics: solar peaks during mid-day load plateau, while fossil gas serves as the primary flexible dispatch balancing load."
+    },
+    {
+      "chart": "Temperature vs Load Elasticity",
+      "file": "docs\\figures\\05_temp_vs_load.png",
+      "insight": "Classic U-shaped thermo-electrical demand curve: electricity demand reaches its minimum in the thermal comfort zone (18\u00b0C\u201322\u00b0C). As temperatures fall below 15\u00b0C, heating demand rises sharply; as temperatures climb above 25\u00b0C, cooling demand drives summer peak load."
+    },
+    {
+      "chart": "Renewable Generation Dynamics",
+      "file": "docs\\figures\\06_renewable_generation.png",
+      "insight": "Solar generation displays strong diurnal periodicity (peaking at ~5,000 MW at midday), while wind generation is stochastic and intermittent (swinging between 1,000 MW and 12,000 MW across weather fronts), demonstrating the need for precise STLF to schedule balancing reserves."
+    },
+    {
+      "chart": "Load Distribution",
+      "file": "docs\\figures\\07_load_distribution.png",
+      "insight": "Load distribution is bimodal with slight negative skew, reflecting nighttime trough modes (~23,000 MW) and active daytime operational modes (~31,000 MW). Standard deviation of 4,575 MW underscores substantial short-term variability."
+    }
+  ]
+}
