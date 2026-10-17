@@ -45,26 +45,27 @@ def run_models_and_evaluation():
     predictions_dict = {}
     
     # ----------------------------------------------------
-    # 1. MODEL 1: PERSISTENCE BASELINE
+    # 1. EVALUATING SCIENTIFIC BASELINES & BENCHMARKS
     # ----------------------------------------------------
-    print("\n--- [1/5] Evaluating Persistence Baseline ---")
+    print("\n--- [1/5] Evaluating True Baselines & Operator Benchmark ---")
+    cleaned_file = os.path.join("data", "processed", "cleaned_dataset.csv")
+    df_clean = pd.read_csv(cleaned_file)
+    df_clean = df_clean.set_index('timestamp')
+
+    # Aligned series for test period
+    actual = y_test_unscaled
+    test_ts_list = [str(ts) for ts in test_timestamps]
+
+    # Baseline 1: True Persistence (Lag 1h)
     start_t = time.time()
-    # Baseline predicts previous step y(t-1)
-    # The last step in lookback window for the target feature is at index -1
-    # Or in scaled space:
-    y_pred_base_scaled = X_test[:, -1, 0]  # or target lag 1
-    # Reshape and inverse scale
-    y_pred_base_unscaled = target_scaler.inverse_transform(y_pred_base_scaled.reshape(-1, 1)).ravel()
-    
-    # Alternatively, direct unscaled lag 1 from data
-    mae_base = mean_absolute_error(y_test_unscaled, y_pred_base_unscaled)
-    rmse_base = root_mean_squared_error(y_test_unscaled, y_pred_base_unscaled)
-    mape_base = calculate_mape(y_test_unscaled, y_pred_base_unscaled)
-    r2_base = r2_score(y_test_unscaled, y_pred_base_unscaled)
+    persistence = df_clean['total load actual'].shift(1).loc[test_ts_list].values
+    mae_base = mean_absolute_error(actual, persistence)
+    rmse_base = root_mean_squared_error(actual, persistence)
+    mape_base = calculate_mape(actual, persistence)
+    r2_base = r2_score(actual, persistence)
     elapsed_base = time.time() - start_t
-    
-    print(f"Persistence -> MAE: {mae_base:.2f} MW | RMSE: {rmse_base:.2f} MW | MAPE: {mape_base:.2f}% | R2: {r2_base:.4f}")
-    
+    print(f"Persistence (Lag 1h) -> MAE: {mae_base:.2f} MW | RMSE: {rmse_base:.2f} MW | MAPE: {mape_base:.2f}% | R2: {r2_base:.4f}")
+
     leaderboard.append({
         'model_name': 'Persistence Baseline',
         'mae': round(float(mae_base), 2),
@@ -74,7 +75,64 @@ def run_models_and_evaluation():
         'train_time_sec': round(float(elapsed_base), 2),
         'model_file': 'baseline'
     })
-    predictions_dict['Persistence Baseline'] = y_pred_base_unscaled
+    predictions_dict['Persistence Baseline'] = persistence
+
+    # Baseline 2: Seasonal Naive (Same hour yesterday, Lag 24h)
+    snaive_24 = df_clean['total load actual'].shift(24).loc[test_ts_list].values
+    mae_sn24 = mean_absolute_error(actual, snaive_24)
+    rmse_sn24 = root_mean_squared_error(actual, snaive_24)
+    mape_sn24 = calculate_mape(actual, snaive_24)
+    r2_sn24 = r2_score(actual, snaive_24)
+    print(f"Seasonal Naive (24h) -> MAE: {mae_sn24:.2f} MW | RMSE: {rmse_sn24:.2f} MW | MAPE: {mape_sn24:.2f}% | R2: {r2_sn24:.4f}")
+
+    leaderboard.append({
+        'model_name': 'Seasonal Naive (24h)',
+        'mae': round(float(mae_sn24), 2),
+        'rmse': round(float(rmse_sn24), 2),
+        'mape': round(float(mape_sn24), 2),
+        'r2': round(float(r2_sn24), 4),
+        'train_time_sec': 0.02,
+        'model_file': 'baseline'
+    })
+    predictions_dict['Seasonal Naive (24h)'] = snaive_24
+
+    # Baseline 3: Seasonal Naive (Same hour last week, Lag 168h)
+    snaive_168 = df_clean['total load actual'].shift(168).loc[test_ts_list].values
+    mae_sn168 = mean_absolute_error(actual, snaive_168)
+    rmse_sn168 = root_mean_squared_error(actual, snaive_168)
+    mape_sn168 = calculate_mape(actual, snaive_168)
+    r2_sn168 = r2_score(actual, snaive_168)
+    print(f"Seasonal Naive (168h)-> MAE: {mae_sn168:.2f} MW | RMSE: {rmse_sn168:.2f} MW | MAPE: {mape_sn168:.2f}% | R2: {r2_sn168:.4f}")
+
+    leaderboard.append({
+        'model_name': 'Seasonal Naive (168h)',
+        'mae': round(float(mae_sn168), 2),
+        'rmse': round(float(rmse_sn168), 2),
+        'mape': round(float(mape_sn168), 2),
+        'r2': round(float(r2_sn168), 4),
+        'train_time_sec': 0.02,
+        'model_file': 'baseline'
+    })
+    predictions_dict['Seasonal Naive (168h)'] = snaive_168
+
+    # Benchmark: Grid Operator Day-Ahead Forecast
+    operator_forecast = df_clean['total load forecast'].loc[test_ts_list].values
+    mae_oper = mean_absolute_error(actual, operator_forecast)
+    rmse_oper = root_mean_squared_error(actual, operator_forecast)
+    mape_oper = calculate_mape(actual, operator_forecast)
+    r2_oper = r2_score(actual, operator_forecast)
+    print(f"Operator Forecast    -> MAE: {mae_oper:.2f} MW | RMSE: {rmse_oper:.2f} MW | MAPE: {mape_oper:.2f}% | R2: {r2_oper:.4f}")
+
+    leaderboard.append({
+        'model_name': 'Grid Operator Forecast',
+        'mae': round(float(mae_oper), 2),
+        'rmse': round(float(rmse_oper), 2),
+        'mape': round(float(mape_oper), 2),
+        'r2': round(float(r2_oper), 4),
+        'train_time_sec': 0.01,
+        'model_file': 'benchmark'
+    })
+    predictions_dict['Grid Operator Forecast'] = operator_forecast
     
     # ----------------------------------------------------
     # TENSORFLOW DEEP LEARNING SETUP
@@ -292,14 +350,17 @@ def run_models_and_evaluation():
     predictions_dict['CNN-LSTM'] = y_pred_cnn_lstm_unscaled
 
     # ----------------------------------------------------
-    # SELECT BEST PERFORMING MODEL
+    # SELECT BEST PERFORMING DEEP LEARNING MODEL
     # ----------------------------------------------------
-    leaderboard_sorted = sorted(leaderboard, key=lambda x: x['mape'])
-    best_model_info = leaderboard_sorted[0]
-    for item in leaderboard_sorted:
-        item['is_best'] = (item['model_name'] == best_model_info['model_name'])
+    ml_models = [m for m in leaderboard if m.get('model_file') not in ['baseline', 'benchmark']]
+    best_ml = sorted(ml_models, key=lambda x: x['mape'])[0]
+    for item in leaderboard:
+        item['is_best'] = (item['model_name'] == best_ml['model_name'])
         
-    print(f"\n[BEST MODEL SELECTED] {best_model_info['model_name']} with MAPE = {best_model_info['mape']}% and R2 = {best_model_info['r2']}")
+    leaderboard_sorted = sorted(leaderboard, key=lambda x: x['mape'])
+    best_model_info = best_ml
+        
+    print(f"\n[CHAMPION ML MODEL SELECTED] {best_model_info['model_name']} with MAPE = {best_model_info['mape']}% and R2 = {best_model_info['r2']}")
     
     # Copy best model to best_model.keras
     import shutil

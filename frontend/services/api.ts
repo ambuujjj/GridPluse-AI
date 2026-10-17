@@ -232,3 +232,161 @@ export async function fetchDatasetPage(page: number = 1, pageSize: number = 15, 
     };
   }
 }
+
+// ============= Upload & Analyze API =============
+
+export interface ColumnProfile {
+  name: string;
+  dtype: string;
+  non_null_count: number;
+  null_count: number;
+  null_percent: number;
+  unique_count: number;
+  mean?: number | null;
+  std?: number | null;
+  min?: number | null;
+  q25?: number | null;
+  median?: number | null;
+  q75?: number | null;
+  max?: number | null;
+  skewness?: number | null;
+  kurtosis?: number | null;
+  top_values?: Record<string, number>;
+}
+
+export interface DistributionData {
+  bins: number[];
+  counts: number[];
+  bin_labels: string[];
+}
+
+export interface OutlierInfo {
+  total_count: number;
+  outlier_count: number;
+  outlier_percent: number;
+  lower_fence: number;
+  upper_fence: number;
+  q1: number;
+  q3: number;
+  iqr: number;
+}
+
+export interface ScatterPair {
+  feature: string;
+  correlation: number | null;
+  points: { x: number; y: number }[];
+}
+
+export interface TimeSeriesAnalytics {
+  hourly_profile?: { hour: number; avg_value: number }[];
+  day_of_week_profile?: { day: string; avg_value: number }[];
+  monthly_trend?: { month: string; avg_value: number; min_value: number; max_value: number }[];
+  time_series_trend?: { timestamp: string; value: number; rolling_mean: number | null }[];
+}
+
+export interface DatasetReport {
+  report_id: string;
+  filename: string;
+  generated_at: string;
+  dataset_overview: {
+    total_rows: number;
+    total_columns: number;
+    memory_usage_mb: number;
+    datetime_column: string | null;
+    target_column: string | null;
+    numeric_columns: string[];
+    categorical_columns: string[];
+    column_names: string[];
+    date_range?: { start: string; end: string };
+  };
+  data_quality: {
+    total_rows: number;
+    total_columns: number;
+    columns_with_missing: number;
+    complete_rows: number;
+    complete_rows_percent: number;
+    per_column: { column: string; missing_count: number; missing_percent: number }[];
+    duplicate_rows?: number;
+    duplicate_rows_percent?: number;
+    constant_columns?: string[];
+    high_missing_columns?: string[];
+    quality_score?: number;
+    checks?: { name: string; status: 'pass' | 'warning' | 'info'; detail: string }[];
+  };
+  column_profiles: ColumnProfile[];
+  distributions: Record<string, DistributionData>;
+  correlation_matrix: Record<string, Record<string, number | null>>;
+  outlier_analysis: Record<string, OutlierInfo>;
+  time_series_analytics: TimeSeriesAnalytics;
+  scatter_analysis: ScatterPair[];
+  sample_data: {
+    columns: string[];
+    rows: Record<string, any>[];
+  };
+}
+
+export interface ReportSummary {
+  report_id: string;
+  filename: string;
+  generated_at: string;
+  total_rows: number;
+  total_columns: number;
+}
+
+export async function uploadAndAnalyze(
+  file: File,
+  onProgress?: (pct: number) => void
+): Promise<DatasetReport> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await axios.post<DatasetReport>(`${API_BASE_URL}/api/upload-analyze`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+    onUploadProgress: (evt) => {
+      if (evt.total && onProgress) {
+        onProgress(Math.round((evt.loaded * 100) / evt.total));
+      }
+    },
+  });
+  return res.data;
+}
+
+export async function reconfigureDatasetReport(
+  reportId: string,
+  datetimeColumn: string,
+  targetColumn: string
+): Promise<DatasetReport> {
+  const res = await client.post<DatasetReport>(`/api/reports/${reportId}/reconfigure`, {
+    datetime_column: datetimeColumn,
+    target_column: targetColumn,
+  }, { timeout: 120000 });
+  return res.data;
+}
+
+export async function fetchReports(): Promise<ReportSummary[]> {
+  try {
+    const res = await client.get<{ reports: ReportSummary[] }>('/api/reports');
+    return res.data.reports;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchReport(reportId: string): Promise<DatasetReport | null> {
+  try {
+    const res = await client.get<DatasetReport>(`/api/reports/${reportId}`);
+    return res.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteReport(reportId: string): Promise<boolean> {
+  try {
+    await client.delete(`/api/reports/${reportId}`);
+    return true;
+  } catch {
+    return false;
+  }
+}

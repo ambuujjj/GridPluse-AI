@@ -43,7 +43,12 @@ data/processed/*.csv
 data/features/*.npy
 data/uploads/
 workspace/
+workspace_test_scratch/
 *.parquet
+*.db
+*.db-wal
+*.db-shm
+
 
 # Frontend / Next.js
 frontend/node_modules/
