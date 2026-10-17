@@ -42,6 +42,7 @@ archive (1)/*.csv
 data/processed/*.csv
 data/features/*.npy
 data/uploads/
+data/reports/
 workspace/
 workspace_test_scratch/
 *.parquet
