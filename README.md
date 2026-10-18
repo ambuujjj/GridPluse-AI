@@ -151,7 +151,7 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 </details>
 
 <details>
-<summary>🐧 <b>macOS / Linux</b></summary>
+<summary> <b>macOS / Linux</b></summary>
 
 ```bash
 cd backend
